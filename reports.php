@@ -818,7 +818,7 @@
                         </div>
                         <div>
                             <label class="field-label">Committee chairperson</label>
-                            <div id="projectChairperson" class="budget-input d-flex align-items-center" aria-live="polite">Not assigned</div>
+                            <div id="projectChairperson" class="budget-input d-flex align-items-center" aria-live="polite"></div>
                         </div>
                     </div>
                     <div>
@@ -978,6 +978,7 @@ const DEFAULT_COMMITTEES = [
 ];
 let committees = DEFAULT_COMMITTEES.slice();
 let committeeChairs = {};
+let committeeRoles = [];
 let officialsById = {};
 let budgetData = { fy:'2026-2027', projects:[] };
 let budgetsByYear = {};
@@ -1091,7 +1092,7 @@ function loadBudgetData() {
         const savedCommittees = storedArray('skCommittees');
         committees = Array.from(new Set(DEFAULT_COMMITTEES.concat(savedCommittees.filter(name => typeof name === 'string'))));
         committeeChairs = storedObject('skCommitteeChairs');
-        const roles = storedArray('skRoles');
+        committeeRoles = storedArray('skRoles');
         const members = storedArray('kkMembers');
         const memberById = {};
         members.forEach(member => { if (member && member.id != null) memberById[String(member.id)] = member; });
@@ -1102,7 +1103,7 @@ function loadBudgetData() {
             String(currentDate.getMonth() + 1).padStart(2, '0'),
             String(currentDate.getDate()).padStart(2, '0')
         ].join('-');
-        roles.forEach(role => {
+        committeeRoles.forEach(role => {
             if (!role || role.status !== 'Active'
                 || (role.termStart && role.termStart > today)
                 || (role.termEnd && role.termEnd < today)) return;
@@ -1119,6 +1120,9 @@ function loadBudgetData() {
         budgetData = { fy:'2026-2027', projects:[] };
         budgetsByYear = { '2026-2027': budgetData };
         expenseData = [];
+        committeeRoles = [];
+        committeeChairs = {};
+        officialsById = {};
         if (window.AppAlerts) AppAlerts.error('Could not load the saved budget and expense records.');
         else console.error('Could not load the saved budget and expense records.', error);
     }
@@ -1159,10 +1163,42 @@ function renderProjectCommitteeOptions() {
 }
 
 function updateProjectChairperson() {
-    const roleId = committeeChairs[document.getElementById('projectCommittee').value];
+    const roleId = committeeChairRoleId(document.getElementById('projectCommittee').value);
     const official = roleId ? officialsById[String(roleId)] : null;
     document.getElementById('projectChairperson').textContent = official
-        ? official.name + ' — ' + official.position : 'Not assigned';
+        ? official.name + ' — ' + official.position : '';
+}
+
+function committeeChairRoleId(committee) {
+    const assignedRoleId = committeeChairs[committee];
+    if (assignedRoleId && officialsById[String(assignedRoleId)]) return String(assignedRoleId);
+
+    const authority = {
+        'SK Chairman': 5,
+        'SK Chairperson': 5,
+        'SK Secretary': 4,
+        'SK Treasurer': 3,
+        'SK Kagawad': 2,
+        'SK Vice Chairperson': 1
+    };
+    let selectedRoleId = null;
+    let selectedAuthority = -1;
+
+    committeeRoles.forEach(role => {
+        if (!role || !officialsById[String(role.id)]) return;
+        const roleAuthority = authority[role.position];
+        if (roleAuthority === undefined) return;
+
+        const roleCommittees = Array.isArray(role.committees) ? role.committees
+            : (Array.isArray(role.committee) ? role.committee : (role.committee ? [role.committee] : []));
+        if (!roleCommittees.includes(committee)) return;
+
+        if (roleAuthority <= selectedAuthority) return;
+        selectedRoleId = String(role.id);
+        selectedAuthority = roleAuthority;
+    });
+
+    return selectedRoleId;
 }
 
 function renderExpenseProjectOptions(selectedId) {
@@ -1304,7 +1340,7 @@ function renderProjectTable() {
     body.innerHTML = budgetData.projects.map(project => {
         const spent = expenses.filter(expense => expense.projectId === project.id)
             .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-        const chairId = committeeChairs[project.committee];
+        const chairId = committeeChairRoleId(project.committee);
         const chair = chairId ? officialsById[String(chairId)] : null;
         return '<tr><td><strong>' + escapeReportHtml(project.name) + '</strong>' +
             (project.legacy ? '<div class="small text-warning">Legacy total — review and split into projects</div>' : '') +
@@ -1638,7 +1674,7 @@ function generateBudgetPDF() {
     const projectRows = budgetData.projects.map(project => {
         const spent = selectedExpenses.filter(expense => expense.projectId === project.id)
             .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-        const chairId = committeeChairs[project.committee];
+        const chairId = committeeChairRoleId(project.committee);
         const chair = chairId ? officialsById[String(chairId)] : null;
         return '<tr><td>' + escapeReportHtml(project.name) + '</td><td>' + escapeReportHtml(budgetTypeLabel(project.type)) +
             '</td><td>' + escapeReportHtml(project.cop || 'Not set') + '</td><td>' +

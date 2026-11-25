@@ -1069,6 +1069,8 @@ window.SK_CURRENT_MEMBER_ID = <?= json_encode(
                 <p class="small text-muted">Assign an SK official as chairperson of each committee. One official may chair more than one committee.</p>
                 <div id="committeeList" class="list-group mb-3"></div>
                 <button type="button" class="btn btn-primary mb-3" id="saveCommitteeChairsBtn">Save Chairpersons</button>
+                <button type="button" class="btn btn-outline-primary mb-3" id="randomizeCommitteeChairsBtn">Randomly Assign All</button>
+                <p class="small text-muted mb-0">Random assignments are saved and stay the same until changed.</p>
                 <hr>
                 <p class="small text-muted">Add or rename committees. Renaming updates committee memberships and chairperson assignments.</p>
                 <form id="committeeForm">
@@ -2451,6 +2453,19 @@ window.SK_CURRENT_MEMBER_ID = <?= json_encode(
         $('committeeCancelEditBtn').classList.add('d-none');
         clearErrs($('committeeForm'));
     }
+    function randomCommitteeChairAssignments(selects) {
+        var assignments = {};
+        selects.forEach(function (select) {
+            var options = Array.prototype.slice.call(select.options).filter(function (option) {
+                return option.value !== '';
+            });
+            if (!options.length) throw new Error('No active SK officials are available to assign as committee chairpersons.');
+            var selected = options[Math.floor(Math.random() * options.length)];
+            assignments[select.dataset.committeeChair] = selected.value;
+        });
+        if (!selects.length) throw new Error('No committees are available for chairperson assignment.');
+        return assignments;
+    }
     $('manageCommitteesBtn').addEventListener('click', function () {
         loadCommittees();
         renderCommitteeList();
@@ -2477,6 +2492,19 @@ window.SK_CURRENT_MEMBER_ID = <?= json_encode(
             notify('success', 'Committee chairpersons saved.');
         } catch (error) {
             notify('danger', error.message || 'Could not save committee chairpersons.');
+        }
+    });
+    $('randomizeCommitteeChairsBtn').addEventListener('click', function () {
+        var selects = Array.prototype.slice.call($('committeeList').querySelectorAll('[data-committee-chair]'));
+        try {
+            var assignments = randomCommitteeChairAssignments(selects);
+            DB.saveCommitteeChairs(assignments, COMMITTEES);
+            selects.forEach(function (select) {
+                select.value = assignments[select.dataset.committeeChair];
+            });
+            notify('success', 'Random chairpersons assigned and saved.');
+        } catch (error) {
+            notify('danger', error.message || 'Could not randomly assign committee chairpersons.');
         }
     });
     $('committeeForm').addEventListener('submit', function (event) {

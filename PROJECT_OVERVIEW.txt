@@ -24,7 +24,7 @@ TECHNOLOGY AND DATA
   exact address listed in the KK_TRUSTED_PROXIES environment variable.
 - IP geolocation is not configured by default. Audit details show
   "Location unavailable" rather than sending IP addresses to an unconfigured
-  third party or collecting precise GPS data.
+  third party or collecting precise GPS data.   
 - init.php supplies page data. storage.js sends authorized changes to api.php,
   which checks permissions before writing.
 - KK member profiles and edit requests are saved together with stale-write
@@ -160,7 +160,7 @@ Important app_data keys include:
 - skRoles: SK roles associated with KK member IDs.
 - skAnnouncements: announcements and event definitions.
 - skEventRegistrations: event sign-ups and attendance state for sign-ups.
-- skEventAttendance: walk-in attendance records, including reversible soft-removal metadata.
+- skEventAttendance: walk-in attendance records.
 - skMeetings and skAttendance: SK meetings and their attendance.
 - Meeting records also carry private minutes, draft/approved state, and
   updater metadata. Minutes are not included in public bootstrap data.

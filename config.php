@@ -14,6 +14,16 @@ define('DB_HOST', (string)config_env('KK_DB_HOST', 'localhost'));
 define('DB_NAME', (string)config_env('KK_DB_NAME', 'kk'));
 define('DB_USER', (string)config_env('KK_DB_USER', APP_ENV === 'development' ? 'root' : ''));
 define('DB_PASS', (string)config_env('KK_DB_PASS', ''));
+define('GOOGLE_OAUTH_CLIENT_ID', (string)config_env('GOOGLE_OAUTH_CLIENT_ID', ''));
+define('GOOGLE_OAUTH_CLIENT_SECRET', (string)config_env('GOOGLE_OAUTH_CLIENT_SECRET', ''));
+define('GOOGLE_OAUTH_REDIRECT_URI', (string)config_env(
+    'GOOGLE_OAUTH_REDIRECT_URI',
+    APP_ENV === 'development' ? 'http://localhost/genesis/google-callback.php' : ''
+));
+define('GOOGLE_KK_LOGIN_REQUIRED', filter_var(
+    config_env('GOOGLE_KK_LOGIN_REQUIRED', 'false'),
+    FILTER_VALIDATE_BOOLEAN
+));
 const USE_MEMBERS_TABLE = false;
 const USE_SK_ROLES_TABLE = false;
 const APP_WRITE_ROLES = ['SK Chairman', 'SK Chairperson', 'SK Secretary', 'SK Treasurer', 'SK Kagawad', 'SK Vice Chairperson'];
